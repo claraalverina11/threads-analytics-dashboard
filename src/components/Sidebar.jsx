@@ -1,18 +1,10 @@
-import {
-  IconOverview,
-  IconAnalytics,
-  IconTable,
-  IconWeek,
-  IconMonth,
-  IconSpark,
-} from './Icons'
+import { IconOverview, IconAnalytics, IconTable, IconWeek, IconSpark } from './Icons'
 
 const NAV = [
   { id: 'overview', label: 'Overview', icon: IconOverview },
   { id: 'analytics', label: 'Analytics', icon: IconAnalytics },
   { id: 'content', label: 'Content Performance', icon: IconTable },
-  { id: 'weekly', label: 'Weekly Insights', icon: IconWeek },
-  { id: 'monthly', label: 'Monthly Insights', icon: IconMonth },
+  { id: 'insights', label: 'Insights', icon: IconWeek },
   { id: 'ai', label: 'AI Recommendations', icon: IconSpark },
 ]
 

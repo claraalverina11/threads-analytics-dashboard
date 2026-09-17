@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { formatCompact, formatNumber, formatPercent, formatDate, truncate } from '../lib/format'
 import { withDerived, performanceFlags } from '../lib/analytics'
 import { PillarBadge, StatusBadge } from './ui'
-import { IconExternal, IconTrophy, IconAlert } from './Icons'
+import { IconExternal, IconTrophy, IconAlert, IconEdit, IconTrash } from './Icons'
 
 const COLUMNS = [
   { key: 'date', label: 'Date', num: false, sortable: true },
@@ -19,7 +19,8 @@ const COLUMNS = [
   { key: 'link', label: '', num: true, sortable: false },
 ]
 
-export default function ContentTable({ posts, initialSort = 'views', pageSize = 12 }) {
+export default function ContentTable({ posts, initialSort = 'views', pageSize = 12, onEdit, onDelete }) {
+  const showActions = Boolean(onEdit || onDelete)
   const [sortKey, setSortKey] = useState(initialSort)
   const [sortDir, setSortDir] = useState('desc')
   const [limit, setLimit] = useState(pageSize)
@@ -75,6 +76,7 @@ export default function ContentTable({ posts, initialSort = 'views', pageSize = 
                   )}
                 </th>
               ))}
+              {showActions && <th className="num" aria-label="Actions" />}
             </tr>
           </thead>
           <tbody>
@@ -129,12 +131,33 @@ export default function ContentTable({ posts, initialSort = 'views', pageSize = 
                       </a>
                     ) : null}
                   </td>
+                  {showActions && (
+                    <td className="num">
+                      <div className="row-actions">
+                        {onEdit && (
+                          <button className="row-btn" title="Edit post" aria-label="Edit post" onClick={() => onEdit(p)}>
+                            <IconEdit />
+                          </button>
+                        )}
+                        {onDelete && (
+                          <button
+                            className="row-btn danger"
+                            title="Delete post"
+                            aria-label="Delete post"
+                            onClick={() => onDelete(p)}
+                          >
+                            <IconTrash />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  )}
                 </tr>
               )
             })}
             {visible.length === 0 && (
               <tr>
-                <td colSpan={COLUMNS.length} style={{ textAlign: 'center', padding: '32px', color: 'var(--ink-400)' }}>
+                <td colSpan={COLUMNS.length + (showActions ? 1 : 0)} style={{ textAlign: 'center', padding: '32px', color: 'var(--ink-400)' }}>
                   No posts match the current filters.
                 </td>
               </tr>

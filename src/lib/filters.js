@@ -27,17 +27,34 @@ export function datasetMinDate(posts) {
   return min || format(new Date(), 'yyyy-MM-dd')
 }
 
-/** Compute [start,end] ISO strings for a preset relative to the dataset anchor. */
+/**
+ * Compute [start,end] ISO strings for a preset.
+ * The window is always anchored to the dataset itself (the latest post),
+ * not to "today", so imported data from any month displays correctly.
+ * The result is clamped to the dataset's actual min/max and guaranteed to
+ * have start <= end.
+ */
 export function resolveRange(presetId, posts, custom) {
-  const anchor = datasetMaxDate(posts)
   if (presetId === 'custom' && custom?.start && custom?.end) {
-    return { start: custom.start, end: custom.end }
+    const start = custom.start <= custom.end ? custom.start : custom.end
+    const end = custom.start <= custom.end ? custom.end : custom.start
+    return { start, end }
   }
-  const preset = DATE_PRESETS.find((p) => p.id === presetId) || DATE_PRESETS[1]
-  if (preset.days == null) {
-    return { start: datasetMinDate(posts), end: anchor }
+  const min = datasetMinDate(posts)
+  const max = datasetMaxDate(posts) // anchor = latest post date
+  const preset = DATE_PRESETS.find((p) => p.id === presetId) || DATE_PRESETS.find((p) => p.id === 'all')
+
+  // "All time" (days == null): full span of the data.
+  if (!preset || preset.days == null) {
+    return { start: min, end: max }
   }
-  return { start: isoDaysAgo(anchor, preset.days - 1), end: anchor }
+
+  // Rolling window ending at the latest post; never start before the data
+  // begins, and never invert the range.
+  let start = isoDaysAgo(max, preset.days - 1)
+  if (start < min) start = min
+  if (start > max) start = min // safety: never invert
+  return { start, end: max }
 }
 
 /** The immediately-preceding window of equal length, for period comparison. */

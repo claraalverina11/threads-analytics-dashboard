@@ -29,8 +29,6 @@ import {
 } from './lib/filters'
 import { PILLARS, STATUSES } from './lib/constants'
 import { computeKpis } from './lib/analytics'
-import { parsePostsText } from './data/dataSource'
-import { WEEK1_SEP_CSV } from './data/week1Sep'
 import { exportSummaryCsv, exportPostsCsv } from './lib/export'
 import { formatDateLong } from './lib/format'
 
@@ -110,10 +108,6 @@ export default function App() {
     if (mode === 'replace') replaceAll(posts)
     else addMany(posts)
     setImportOpen(false)
-  }
-  function loadWeek1Sample() {
-    const posts = parsePostsText(WEEK1_SEP_CSV)
-    replaceAll(posts)
   }
   function handleClearAll() {
     if (
@@ -240,21 +234,6 @@ export default function App() {
                   <IconUpload /> Import from spreadsheet
                 </button>
               </div>
-              <button
-                className="muted"
-                onClick={loadWeek1Sample}
-                style={{
-                  marginTop: 4,
-                  fontSize: 12.5,
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: 'var(--brand-500)',
-                  fontWeight: 600,
-                }}
-              >
-                or load the Week 1 September sample (156 posts) →
-              </button>
             </div>
           ) : filtered.length === 0 ? (
             <div className="empty">

@@ -11,7 +11,7 @@
 import { normalizePost } from '../data/dataSource'
 
 const STORAGE_KEY = 'threads-analytics.posts.v1'
-const META = { account: '@your.account', platform: 'Threads', source: 'manual' }
+const META = { account: '@padelfellas.id', platform: 'Threads', source: 'manual' }
 
 let posts = load()
 const listeners = new Set()

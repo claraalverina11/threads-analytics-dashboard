@@ -172,7 +172,7 @@ export function addPost(raw) {
   if (hasSupabase) {
     supabase
       .from(POSTS_TABLE)
-      .insert(toRow(post))
+      .upsert(toRow(post))
       .then(({ error }) => error && console.error('Supabase insert failed:', error.message))
   }
   return post
@@ -209,14 +209,22 @@ export function deletePost(id) {
 
 /** Replace the entire dataset (CSV import / bulk paste, replace mode). */
 export function replaceAll(rawList) {
-  const next = rawList.map((r, i) => normalizePost({ ...r, id: r.id || `${makeId()}-${i}` }, i))
+  // normalizePost already assigns a unique id to any id-less row.
+  const next = rawList.map((r, i) => normalizePost(r, i))
+  // Guarantee uniqueness even if the source provided colliding ids.
+  ensureUniqueIds(next)
   setPosts(next)
   if (hasSupabase) {
     ;(async () => {
       try {
-        // Wipe then insert the new set.
-        await supabase.from(POSTS_TABLE).delete().neq('id', '')
-        if (next.length) await supabase.from(POSTS_TABLE).insert(next.map(toRow))
+        // Delete everything, then upsert the new set. Upsert (not insert) so a
+        // repeated id can never abort the whole batch with a 409.
+        const del = await supabase.from(POSTS_TABLE).delete().neq('id', '')
+        if (del.error) throw del.error
+        if (next.length) {
+          const ins = await supabase.from(POSTS_TABLE).upsert(next.map(toRow))
+          if (ins.error) throw ins.error
+        }
       } catch (e) {
         console.error('Supabase replaceAll failed:', e?.message || e)
       }
@@ -226,15 +234,25 @@ export function replaceAll(rawList) {
 
 /** Append many posts at once with fresh ids (bulk import, append mode). */
 export function addMany(rawList) {
-  const added = rawList.map((r, i) => normalizePost({ ...r, id: r.id || `${makeId()}-${i}` }, i))
+  const added = rawList.map((r, i) => normalizePost(r, i))
+  ensureUniqueIds(added, posts)
   setPosts([...added, ...posts])
   if (hasSupabase && added.length) {
     supabase
       .from(POSTS_TABLE)
-      .insert(added.map(toRow))
+      .upsert(added.map(toRow))
       .then(({ error }) => error && console.error('Supabase bulk insert failed:', error.message))
   }
   return added.length
+}
+
+/** Force every post in `list` to have an id unique within list + `existing`. */
+function ensureUniqueIds(list, existing = []) {
+  const seen = new Set(existing.map((p) => p.id))
+  for (const p of list) {
+    if (!p.id || seen.has(p.id)) p.id = makeId()
+    seen.add(p.id)
+  }
 }
 
 export function clearAll() {

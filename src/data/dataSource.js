@@ -41,6 +41,13 @@ export const REQUIRED_FIELDS = [
 
 const NUMERIC_FIELDS = ['views', 'likes', 'comments', 'reposts', 'shares']
 
+let idSeq = 0
+/** Generate a process-unique id (time + counter + random) for id-less rows. */
+function uniqueId() {
+  idSeq += 1
+  return `P-${Date.now().toString(36)}-${idSeq.toString(36)}-${Math.random().toString(36).slice(2, 6)}`
+}
+
 /**
  * Parse a date from several common formats into ISO 'YYYY-MM-DD':
  *   - 2026-09-01            (already ISO)
@@ -141,7 +148,10 @@ export function normalizePost(raw, index = 0) {
     return Number.isFinite(n) ? n : 0
   }
   const post = {
-    id: raw.id != null && raw.id !== '' ? String(raw.id) : `row-${index}`,
+    // A globally-unique id when the source has none. Using `row-{index}` here
+    // caused primary-key collisions on re-import (every import produced the
+    // same row-0, row-1…), so imported/logged rows now get a unique id.
+    id: raw.id != null && raw.id !== '' ? String(raw.id) : uniqueId(index),
     date: parseDate(raw.date),
     pillar: String(raw.pillar ?? 'Uncategorized').trim() || 'Uncategorized',
     contentType: String(raw.contentType ?? raw.type ?? 'Text').trim() || 'Text',

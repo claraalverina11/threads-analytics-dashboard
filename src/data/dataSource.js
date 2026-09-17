@@ -24,8 +24,6 @@
  *
  * See `parseCsv` and `normalizePost` for how spreadsheet rows map in.
  */
-import sample from './sampleData.json'
-
 export const REQUIRED_FIELDS = [
   'id',
   'date',
@@ -67,7 +65,8 @@ export function normalizePost(raw, index = 0) {
  * can drop in without touching callers.
  */
 export async function loadPosts() {
-  // --- Sample implementation -------------------------------------
+  // --- Sample implementation (lazy-loaded so it isn't bundled unless used) --
+  const sample = (await import('./sampleData.json')).default
   const posts = sample.posts.map((p, i) => normalizePost(p, i))
   return { meta: sample.meta, posts }
 

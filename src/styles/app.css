@@ -1046,3 +1046,237 @@ table.data tbody tr:hover {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ---------- Modal / dialog ---------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(14, 21, 18, 0.42);
+  backdrop-filter: blur(2px);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 60;
+  animation: fade 0.14s ease;
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+  width: 100%;
+  max-width: 620px;
+  max-height: 92vh;
+  overflow: auto;
+  animation: pop 0.16s ease;
+}
+@keyframes pop {
+  from {
+    transform: translateY(8px) scale(0.99);
+    opacity: 0;
+  }
+}
+.modal__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 1;
+}
+.modal__head h2 {
+  font-size: 16px;
+}
+.modal__head p {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-400);
+}
+.modal__head .spacer {
+  flex: 1;
+}
+.modal__close {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-500);
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  line-height: 1;
+}
+.modal__close:hover {
+  background: var(--brand-tint);
+  color: var(--ink-800);
+}
+.modal__body {
+  padding: 20px;
+}
+.modal__foot {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 16px 20px;
+  border-top: 1px solid var(--line);
+  position: sticky;
+  bottom: 0;
+  background: var(--surface);
+}
+
+/* ---------- Form ---------- */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.form-field.col-span {
+  grid-column: 1 / -1;
+}
+.form-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-600, var(--ink-500));
+}
+.form-field label .req {
+  color: var(--neg);
+  margin-left: 2px;
+}
+.form-field .hint {
+  font-size: 11px;
+  color: var(--ink-400);
+}
+.input,
+.textarea {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: 9px 11px;
+  font-size: 13.5px;
+  font-family: inherit;
+  color: var(--ink-800);
+  background: var(--surface);
+  width: 100%;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.textarea {
+  resize: vertical;
+  min-height: 70px;
+}
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--brand-400);
+  box-shadow: 0 0 0 3px var(--brand-ring);
+}
+.input.invalid,
+.textarea.invalid {
+  border-color: var(--neg);
+  box-shadow: 0 0 0 3px var(--neg-bg);
+}
+.field-error {
+  font-size: 11.5px;
+  color: var(--neg);
+  font-weight: 550;
+}
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+.form-note {
+  margin: 0 0 16px;
+  font-size: 12.5px;
+  color: var(--ink-500);
+  background: var(--brand-tint);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  line-height: 1.5;
+}
+
+/* Row action buttons in the content table */
+.row-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+.row-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-500);
+  display: grid;
+  place-items: center;
+}
+.row-btn svg {
+  width: 15px;
+  height: 15px;
+}
+.row-btn:hover {
+  background: var(--brand-tint);
+  color: var(--brand);
+  border-color: var(--line-strong);
+}
+.row-btn.danger:hover {
+  background: var(--neg-bg);
+  color: var(--neg);
+  border-color: var(--neg-bg);
+}
+
+/* Big empty state (no posts logged yet) */
+.empty-state {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  min-height: 56vh;
+  gap: 16px;
+  padding: 30px;
+}
+.empty-state .es-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: var(--brand-tint);
+  color: var(--brand);
+  display: grid;
+  place-items: center;
+}
+.empty-state .es-icon svg {
+  width: 30px;
+  height: 30px;
+}
+.empty-state h2 {
+  font-size: 19px;
+}
+.empty-state p {
+  margin: 0;
+  color: var(--ink-500);
+  font-size: 13.5px;
+  max-width: 46ch;
+  line-height: 1.6;
+}
+
+@media (max-width: 620px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

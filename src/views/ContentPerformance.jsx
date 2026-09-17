@@ -6,7 +6,7 @@ import { withDerived, performanceFlags, isLive } from '../lib/analytics'
 import { exportPostsCsv } from '../lib/export'
 import { formatCompact, formatPercent, truncate } from '../lib/format'
 
-export default function ContentPerformance({ posts, periodLabel }) {
+export default function ContentPerformance({ posts, periodLabel, onEdit, onDelete }) {
   const [query, setQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState('All')
 
@@ -147,7 +147,7 @@ export default function ContentPerformance({ posts, periodLabel }) {
             }
           />
           <div className="card__body" style={{ paddingTop: 6 }}>
-            <ContentTable posts={filtered} initialSort="views" pageSize={14} />
+            <ContentTable posts={filtered} initialSort="views" pageSize={14} onEdit={onEdit} onDelete={onDelete} />
           </div>
         </Card>
       </Section>

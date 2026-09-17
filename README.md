@@ -40,9 +40,11 @@ npm run preview    # preview the production build
 ```
 src/
   data/
-    sampleData.json     # generated sample dataset (Threads posts)
-    dataSource.js       # data-source abstraction (loadPosts, parseCsv, normalizePost)
+    sampleData.json     # optional demo dataset (only used by loadPosts, not the app)
+    dataSource.js       # normalizePost + parseCsv helpers (canonical shape)
   lib/
+    postsStore.js       # source of truth: localStorage-backed posts (add/update/delete)
+    constants.js        # canonical pillars, statuses, content types
     analytics.js        # KPIs, aggregations, time series, performance flags
     insights.js         # weekly/monthly period comparison + narratives
     recommendations.js  # transparent "AI" rules engine (swap for an LLM later)
@@ -51,11 +53,21 @@ src/
     format.js           # number/percent/date formatting helpers
     export.js           # CSV export for posts and summary reports
     theme.js            # chart color constants
-  components/            # Sidebar, Icons, ui primitives, charts, ContentTable
+  components/            # Sidebar, Icons, ui, charts, ContentTable, LogPostModal
   views/                # Overview, Analytics, ContentPerformance, Weekly, Monthly, AiRecommendations
 scripts/
-  generateData.mjs      # regenerate sample data: node scripts/generateData.mjs
+  generateData.mjs      # regenerate the optional demo dataset
 ```
+
+## Logging posts
+
+The dashboard is driven by posts you log manually. Click **Log post** (top
+right) and fill in the fields below; entries are saved to your browser
+(`localStorage`, key `threads-analytics.posts.v1`) and persist across refreshes.
+Edit or delete any entry from the **Content Performance** table. Use **Export
+all posts (CSV)** in the footer to back up or move your data.
+
+Content pillars: **Humor, Community, Product, Lifestyle, Discussion, Sales**.
 
 ## Data model
 

@@ -1,14 +1,12 @@
 import { useMemo, useState } from 'react'
-import { formatCompact, formatNumber, formatPercent, formatDate, truncate } from '../lib/format'
+import { formatCompact, formatNumber, formatPercent, formatDate } from '../lib/format'
 import { withDerived, performanceFlags } from '../lib/analytics'
 import { PillarBadge, StatusBadge } from './ui'
 import { IconExternal, IconTrophy, IconAlert, IconEdit, IconTrash } from './Icons'
 
 const COLUMNS = [
   { key: 'date', label: 'Date', num: false, sortable: true },
-  { key: 'content', label: 'Content', num: false, sortable: true },
   { key: 'pillar', label: 'Pillar', num: false, sortable: true },
-  { key: 'contentType', label: 'Type', num: false, sortable: true },
   { key: 'status', label: 'Status', num: false, sortable: true },
   { key: 'views', label: 'Views', num: true, sortable: true },
   { key: 'likes', label: 'Likes', num: true, sortable: true },
@@ -49,7 +47,7 @@ export default function ContentTable({ posts, initialSort = 'views', pageSize = 
     if (key === sortKey) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
     else {
       setSortKey(key)
-      setSortDir(key === 'content' || key === 'pillar' || key === 'contentType' || key === 'status' || key === 'date' ? 'asc' : 'desc')
+      setSortDir(key === 'pillar' || key === 'status' || key === 'date' ? 'asc' : 'desc')
     }
   }
 
@@ -86,7 +84,8 @@ export default function ContentTable({ posts, initialSort = 'views', pageSize = 
                 <tr key={p.id}>
                   <td style={{ whiteSpace: 'nowrap' }}>{formatDate(p.date)}</td>
                   <td>
-                    <div className="cell-title">
+                    <div className="cell-title" title={p.content}>
+                      <PillarBadge pillar={p.pillar} />
                       {flag === 'top' && (
                         <span className="flag flag--top" title="Top performer">
                           <IconTrophy /> Top
@@ -97,16 +96,7 @@ export default function ContentTable({ posts, initialSort = 'views', pageSize = 
                           <IconAlert /> Low
                         </span>
                       )}
-                      <span className="txt" title={p.content}>
-                        {truncate(p.content, 52)}
-                      </span>
                     </div>
-                  </td>
-                  <td>
-                    <PillarBadge pillar={p.pillar} />
-                  </td>
-                  <td>
-                    <span className="badge badge--neutral">{p.contentType}</span>
                   </td>
                   <td>
                     <StatusBadge status={p.status} />

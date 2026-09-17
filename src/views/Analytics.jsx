@@ -11,10 +11,6 @@ export default function Analytics({ posts, granularity }) {
     () => groupBy(posts, 'pillar').sort((a, b) => b.engagements - a.engagements),
     [posts],
   )
-  const types = useMemo(
-    () => groupBy(posts, 'contentType').sort((a, b) => b.engagementRate - a.engagementRate),
-    [posts],
-  )
 
   return (
     <>
@@ -127,37 +123,6 @@ export default function Analytics({ posts, granularity }) {
                   </tbody>
                 </table>
               </div>
-            </div>
-          </Card>
-        </div>
-      </Section>
-
-      <Section title="Content-type performance" sub="How each post format performs">
-        <div className="grid-2">
-          <Card>
-            <CardHead title="Avg views by content type" />
-            <div className="card__body">
-              <BarBreakdownChart
-                data={types.map((t) => ({ name: t.key, avgViews: Math.round(t.avgViews) }))}
-                xKey="name"
-                layout="horizontal"
-                bar={{ key: 'avgViews', label: 'Avg views', color: BRAND, format: 'compact' }}
-                colors={CATEGORICAL}
-                height={280}
-              />
-            </div>
-          </Card>
-          <Card>
-            <CardHead title="Engagement rate by content type" />
-            <div className="card__body">
-              <BarBreakdownChart
-                data={types.map((t) => ({ name: t.key, engagementRate: +t.engagementRate.toFixed(2) }))}
-                xKey="name"
-                layout="horizontal"
-                bar={{ key: 'engagementRate', label: 'Eng. rate', color: BRAND_400, format: 'percent' }}
-                colors={CATEGORICAL}
-                height={280}
-              />
             </div>
           </Card>
         </div>

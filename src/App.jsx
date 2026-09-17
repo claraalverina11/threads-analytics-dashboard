@@ -9,6 +9,8 @@ import PeriodInsights from './views/PeriodInsights'
 import AiRecommendations from './views/AiRecommendations'
 import LogPostModal from './components/LogPostModal'
 import ImportModal from './components/ImportModal'
+import Login from './components/Login'
+import { isAuthed } from './lib/auth'
 import {
   subscribe,
   getSnapshot,
@@ -51,6 +53,7 @@ export default function App() {
   // meta is cheap to derive and depends on the current posts snapshot.
   const meta = getMeta()
 
+  const [authed, setAuthed] = useState(() => isAuthed())
   const [view, setView] = useState('overview')
   const [navOpen, setNavOpen] = useState(false)
 
@@ -144,6 +147,10 @@ export default function App() {
   }
 
   const vmeta = VIEW_META[view]
+
+  if (!authed) {
+    return <Login onSuccess={() => setAuthed(true)} />
+  }
 
   return (
     <div className={`app${navOpen ? ' nav-open' : ''}`}>

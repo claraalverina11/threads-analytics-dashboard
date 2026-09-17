@@ -1,6 +1,7 @@
 // Small shared UI primitives.
 import { formatCompact, formatNumber, formatPercent, formatDelta } from '../lib/format'
 import { IconArrowUp, IconArrowDown, IconArrowRight } from './Icons'
+import { pillarColor } from '../lib/theme'
 
 export function Card({ children, className = '', ...rest }) {
   return (
@@ -99,5 +100,14 @@ export function StatusBadge({ status }) {
 }
 
 export function PillarBadge({ pillar }) {
-  return <span className="badge badge--pillar">{pillar}</span>
+  const { color, bg } = pillarColor(pillar)
+  return (
+    <span
+      className="badge badge--pillar-colored"
+      style={{ color, background: bg, borderColor: bg }}
+    >
+      <i className="dot" style={{ background: color }} aria-hidden />
+      {pillar}
+    </span>
+  )
 }

@@ -13,7 +13,7 @@ import {
   IconTrend,
 } from '../components/Icons'
 import { computeKpis, bucketedSeries, groupBy, withDerived, isLive } from '../lib/analytics'
-import { CATEGORICAL, METRIC_COLORS, BRAND } from '../lib/theme'
+import { METRIC_COLORS, BRAND, pillarColor } from '../lib/theme'
 import { formatCompact } from '../lib/format'
 
 const KPI_ICONS = {
@@ -92,7 +92,7 @@ export default function Overview({ posts, prevPosts, granularity }) {
                 data={pillars.map((p) => ({ name: p.key, views: p.views }))}
                 xKey="name"
                 bar={{ key: 'views', label: 'Views', color: BRAND, format: 'compact' }}
-                colors={CATEGORICAL}
+                colors={pillars.map((p) => pillarColor(p.key).color)}
                 height={pillars.length * 46 + 20}
               />
             </div>

@@ -14,7 +14,10 @@ import {
 const WEEK_OPTS = { weekStartsOn: 1 }
 
 export function toDate(iso) {
-  return parseISO(`${iso}`)
+  const d = parseISO(`${iso}`)
+  // Guard against invalid/empty dates so downstream format() never throws
+  // (an Invalid Date passed to date-fns format() crashes the render).
+  return Number.isNaN(d.getTime()) ? new Date() : d
 }
 
 export function weekKey(iso) {

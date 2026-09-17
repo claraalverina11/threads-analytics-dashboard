@@ -1,4 +1,4 @@
-import { useMemo, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import './styles/app.css'
 import Sidebar from './components/Sidebar'
 import { IconMenu, IconDownload, IconExternal, IconPlus, IconTable, IconUpload, IconTrash } from './components/Icons'
@@ -15,13 +15,16 @@ import {
   subscribe,
   getSnapshot,
   getMeta,
+  getStatus,
   addPost,
   updatePost,
   deletePost,
   addMany,
   replaceAll,
   clearAll,
+  initRemote,
 } from './lib/postsStore'
+import { hasSupabase } from './lib/supabase'
 import {
   DATE_MODES,
   WEEK_OPTIONS,
@@ -48,10 +51,16 @@ const VIEW_META = {
 const GROUPED_VIEWS = new Set(['overview', 'analytics', 'insights'])
 
 export default function App() {
-  // The posts store is the source of truth (localStorage-backed).
+  // The posts store is the shared source of truth (Supabase + local cache).
   const allPosts = useSyncExternalStore(subscribe, getSnapshot)
+  const syncStatus = useSyncExternalStore(subscribe, getStatus)
   // meta is cheap to derive and depends on the current posts snapshot.
   const meta = getMeta()
+
+  // Load shared data from Supabase and subscribe to realtime updates (once).
+  useEffect(() => {
+    initRemote()
+  }, [])
 
   const [authed, setAuthed] = useState(() => isAuthed())
   const [view, setView] = useState('overview')
@@ -370,8 +379,14 @@ export default function App() {
             }}
           >
             <span className="muted" style={{ fontSize: 12 }}>
-              {meta.platform} · {meta.account} · {allPosts.length} {allPosts.length === 1 ? 'post' : 'posts'} logged ·
-              saved to this browser
+              {meta.platform} · {meta.account} · {allPosts.length} {allPosts.length === 1 ? 'post' : 'posts'} ·{' '}
+              {hasSupabase
+                ? syncStatus === 'error'
+                  ? 'offline — showing cached data'
+                  : syncStatus === 'loading'
+                    ? 'syncing…'
+                    : 'synced to shared database'
+                : 'saved to this browser'}
             </span>
             <div style={{ flex: 1 }} />
             {hasPosts && (

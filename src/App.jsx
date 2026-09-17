@@ -1,7 +1,7 @@
 import { useMemo, useState, useSyncExternalStore } from 'react'
 import './styles/app.css'
 import Sidebar from './components/Sidebar'
-import { IconMenu, IconDownload, IconExternal, IconPlus, IconTable, IconUpload } from './components/Icons'
+import { IconMenu, IconDownload, IconExternal, IconPlus, IconTable, IconUpload, IconTrash } from './components/Icons'
 import Overview from './views/Overview'
 import Analytics from './views/Analytics'
 import ContentPerformance from './views/ContentPerformance'
@@ -19,6 +19,7 @@ import {
   deletePost,
   addMany,
   replaceAll,
+  clearAll,
 } from './lib/postsStore'
 import {
   DATE_PRESETS,
@@ -113,6 +114,15 @@ export default function App() {
   function loadWeek1Sample() {
     const posts = parsePostsText(WEEK1_SEP_CSV)
     replaceAll(posts)
+  }
+  function handleClearAll() {
+    if (
+      window.confirm(
+        `Clear all ${allPosts.length} ${allPosts.length === 1 ? 'post' : 'posts'}? This removes everything saved in this browser and cannot be undone.`,
+      )
+    ) {
+      clearAll()
+    }
   }
 
   function navigate(id) {
@@ -290,22 +300,40 @@ export default function App() {
             </span>
             <div style={{ flex: 1 }} />
             {hasPosts && (
-              <button
-                className="muted"
-                onClick={() => exportPostsCsv(allPosts)}
-                style={{
-                  fontSize: 12,
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 5,
-                  color: 'var(--ink-400)',
-                }}
-              >
-                <IconDownload width={13} height={13} /> Export all posts (CSV)
-              </button>
+              <>
+                <button
+                  className="muted"
+                  onClick={() => exportPostsCsv(allPosts)}
+                  style={{
+                    fontSize: 12,
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    color: 'var(--ink-400)',
+                  }}
+                >
+                  <IconDownload width={13} height={13} /> Export all posts (CSV)
+                </button>
+                <button
+                  onClick={handleClearAll}
+                  style={{
+                    fontSize: 12,
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    color: 'var(--neg)',
+                    fontWeight: 550,
+                  }}
+                >
+                  <IconTrash width={13} height={13} /> Clear all data
+                </button>
+              </>
             )}
             <a
               className="muted"

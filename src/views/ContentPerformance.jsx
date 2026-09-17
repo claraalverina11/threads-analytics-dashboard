@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Card, CardHead, Section } from '../components/ui'
 import ContentTable from '../components/ContentTable'
-import { IconSearch, IconTrophy, IconAlert, IconDownload } from '../components/Icons'
-import { withDerived, performanceFlags, isLive } from '../lib/analytics'
+import { IconSearch, IconDownload } from '../components/Icons'
+import { withDerived, isLive } from '../lib/analytics'
 import { exportPostsCsv } from '../lib/export'
 import { formatCompact, formatPercent, truncate } from '../lib/format'
 
@@ -24,15 +24,12 @@ export default function ContentPerformance({ posts, periodLabel, onEdit, onDelet
     })
   }, [posts, query, typeFilter])
 
-  const flags = useMemo(() => performanceFlags(posts), [posts])
   const live = useMemo(() => withDerived(posts.filter(isLive)), [posts])
   const top = useMemo(() => [...live].sort((a, b) => b.engagementRate - a.engagementRate)[0], [live])
   const low = useMemo(
     () => [...live].filter((p) => p.views > 0).sort((a, b) => a.engagementRate - b.engagementRate)[0],
     [live],
   )
-  const topCount = [...flags.values()].filter((v) => v === 'top').length
-  const lowCount = [...flags.values()].filter((v) => v === 'low').length
 
   return (
     <>
@@ -40,14 +37,7 @@ export default function ContentPerformance({ posts, periodLabel, onEdit, onDelet
         <div className="grid-2">
           {top && (
             <Card>
-              <CardHead
-                title="Top performer"
-                right={
-                  <span className="flag flag--top">
-                    <IconTrophy /> {topCount} flagged
-                  </span>
-                }
-              />
+              <CardHead title="Top performer" sub="Highest engagement rate" />
               <div className="card__body">
                 <div style={{ fontWeight: 600, color: 'var(--ink-900)', marginBottom: 6 }}>
                   {truncate(top.content, 72)}
@@ -75,14 +65,7 @@ export default function ContentPerformance({ posts, periodLabel, onEdit, onDelet
           )}
           {low && (
             <Card>
-              <CardHead
-                title="Needs attention"
-                right={
-                  <span className="flag flag--low">
-                    <IconAlert /> {lowCount} flagged
-                  </span>
-                }
-              />
+              <CardHead title="Needs attention" sub="Lowest engagement rate" />
               <div className="card__body">
                 <div style={{ fontWeight: 600, color: 'var(--ink-900)', marginBottom: 6 }}>
                   {truncate(low.content, 72)}

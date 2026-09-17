@@ -181,3 +181,11 @@ export const IconTrash = wrap(
     <path d="M10 11v6M14 11v6" />
   </>,
 )
+
+export const IconUpload = wrap(
+  <>
+    <path d="M12 15V3" />
+    <path d="M7 8l5-5 5 5" />
+    <path d="M5 21h14" />
+  </>,
+)

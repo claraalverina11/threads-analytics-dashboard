@@ -69,6 +69,22 @@ all posts (CSV)** in the footer to back up or move your data.
 
 Content pillars: **Humor, Community, Product, Lifestyle, Discussion, Sales**.
 
+### Bulk import
+
+Click **Import** to add many posts at once. Paste rows straight from your
+spreadsheet (CSV or tab-separated) or upload a `.csv`/`.tsv`/`.txt` file. The
+parser is tolerant of real-world exports:
+
+- Expected columns: **Date, Pillar, Content, Status, Link, Views, Likes,
+  Comments, Reposts, Shares** (case-insensitive; extra columns such as a
+  leading blank or a `No` index are ignored).
+- Dates may be **DD/MM/YYYY** or **YYYY-MM-DD**.
+- A **“Posted”** status is treated as Published.
+- Metrics can be left blank (they default to 0) and filled in later per post.
+
+A live preview shows how many posts were detected before you import, and you
+can choose to **add to** or **replace** existing posts.
+
 ## Data model
 
 Each post record has this shape (see `src/data/dataSource.js`):

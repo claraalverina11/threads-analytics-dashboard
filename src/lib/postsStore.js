@@ -86,11 +86,20 @@ export function deletePost(id) {
   emit()
 }
 
-/** Replace the entire dataset (used by CSV import / bulk paste later). */
+/** Replace the entire dataset (used by CSV import / bulk paste). */
 export function replaceAll(rawList) {
   posts = sortByDate(rawList.map((r, i) => normalizePost(r, i)))
   persist()
   emit()
+}
+
+/** Append many posts at once, assigning fresh ids (bulk import in append mode). */
+export function addMany(rawList) {
+  const added = rawList.map((r, i) => normalizePost({ ...r, id: r.id || makeId() + '-' + i }, i))
+  posts = sortByDate([...added, ...posts])
+  persist()
+  emit()
+  return added.length
 }
 
 export function clearAll() {

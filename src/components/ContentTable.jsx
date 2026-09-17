@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react'
-import { formatCompact, formatNumber, formatPercent, formatDate } from '../lib/format'
+import { formatCompact, formatNumber, formatPercent, formatDate, truncate } from '../lib/format'
 import { withDerived } from '../lib/analytics'
 import { PillarBadge, StatusBadge } from './ui'
 import { IconExternal, IconEdit, IconTrash } from './Icons'
 
 const COLUMNS = [
   { key: 'date', label: 'Date', num: false, sortable: true },
-  { key: 'pillar', label: 'Pillar', num: false, sortable: true },
+  { key: 'pillar', label: 'Pillar & content', num: false, sortable: true },
   { key: 'status', label: 'Status', num: false, sortable: true },
   { key: 'views', label: 'Views', num: true, sortable: true },
   { key: 'likes', label: 'Likes', num: true, sortable: true },
@@ -82,8 +82,9 @@ export default function ContentTable({ posts, initialSort = 'views', pageSize = 
                 <tr key={p.id}>
                   <td style={{ whiteSpace: 'nowrap' }}>{formatDate(p.date)}</td>
                   <td>
-                    <div className="cell-title" title={p.content}>
+                    <div className="cell-post" title={p.content}>
                       <PillarBadge pillar={p.pillar} />
+                      {p.content && <span className="cell-post__text">{truncate(p.content, 70)}</span>}
                     </div>
                   </td>
                   <td>

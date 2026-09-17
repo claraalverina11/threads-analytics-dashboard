@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { formatCompact, formatNumber, formatPercent, formatDate } from '../lib/format'
-import { withDerived, performanceFlags } from '../lib/analytics'
+import { withDerived } from '../lib/analytics'
 import { PillarBadge, StatusBadge } from './ui'
-import { IconExternal, IconTrophy, IconAlert, IconEdit, IconTrash } from './Icons'
+import { IconExternal, IconEdit, IconTrash } from './Icons'
 
 const COLUMNS = [
   { key: 'date', label: 'Date', num: false, sortable: true },
@@ -23,7 +23,6 @@ export default function ContentTable({ posts, initialSort = 'views', pageSize = 
   const [sortDir, setSortDir] = useState('desc')
   const [limit, setLimit] = useState(pageSize)
 
-  const flags = useMemo(() => performanceFlags(posts), [posts])
   const derived = useMemo(() => withDerived(posts), [posts])
 
   const sorted = useMemo(() => {
@@ -79,23 +78,12 @@ export default function ContentTable({ posts, initialSort = 'views', pageSize = 
           </thead>
           <tbody>
             {visible.map((p) => {
-              const flag = flags.get(p.id)
               return (
                 <tr key={p.id}>
                   <td style={{ whiteSpace: 'nowrap' }}>{formatDate(p.date)}</td>
                   <td>
                     <div className="cell-title" title={p.content}>
                       <PillarBadge pillar={p.pillar} />
-                      {flag === 'top' && (
-                        <span className="flag flag--top" title="Top performer">
-                          <IconTrophy /> Top
-                        </span>
-                      )}
-                      {flag === 'low' && (
-                        <span className="flag flag--low" title="Underperforming">
-                          <IconAlert /> Low
-                        </span>
-                      )}
                     </div>
                   </td>
                   <td>

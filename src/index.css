@@ -76,6 +76,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'ss01';
+  overflow-x: hidden; /* guard against accidental horizontal page scroll on mobile */
 }
 
 a {

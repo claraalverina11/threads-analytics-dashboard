@@ -335,6 +335,15 @@
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
+  min-width: 0; /* allow wide content (tables) to scroll instead of stretching the layout */
+  overflow: hidden;
+}
+/* Grid children must be allowed to shrink so a wide table doesn't push the
+   whole page wider than the viewport (which caused horizontal page scroll). */
+.grid-2 > *,
+.grid-3 > *,
+.grid-3-2 > * {
+  min-width: 0;
 }
 .card__head {
   display: flex;
@@ -521,6 +530,8 @@
 /* ---------- Table ---------- */
 .table-wrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
 }
 table.data {
   width: 100%;
@@ -1033,6 +1044,18 @@ table.data tbody tr:hover {
   .filterbar {
     padding-left: 14px;
     padding-right: 14px;
+    gap: 10px;
+  }
+  .topbar {
+    flex-wrap: wrap;
+  }
+  .topbar__title h1 {
+    font-size: 16px;
+  }
+  /* The reporting period already appears in each section's subtitle, so hide
+     the tall wrapping pill in the header on small screens to save space. */
+  .topbar .period-pill {
+    display: none;
   }
   .kpi__value {
     font-size: 21px;
@@ -1044,6 +1067,13 @@ table.data tbody tr:hover {
   .field {
     min-width: 0;
     width: 100%;
+  }
+  /* Stack section heading + subtitle instead of cramming side by side. */
+  .section__head {
+    flex-wrap: wrap;
+  }
+  .section__head p {
+    flex-basis: 100%;
   }
 }
 

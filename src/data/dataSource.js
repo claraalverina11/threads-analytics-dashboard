@@ -41,19 +41,59 @@ export const REQUIRED_FIELDS = [
 
 const NUMERIC_FIELDS = ['views', 'likes', 'comments', 'reposts', 'shares']
 
+/**
+ * Parse a date from several common formats into ISO 'YYYY-MM-DD':
+ *   - 2026-09-01            (already ISO)
+ *   - 01/09/2026, 1/9/2026  (DD/MM/YYYY — day first, matches the sheet)
+ *   - 01-09-2026            (DD-MM-YYYY)
+ * Ambiguous DD/MM vs MM/DD is resolved as DAY-FIRST, since the source
+ * spreadsheet uses DD/MM/YYYY. Falls back to the raw string if unrecognized.
+ */
+export function parseDate(value) {
+  const s = String(value ?? '').trim()
+  if (!s) return ''
+  // Already ISO (YYYY-MM-DD…)
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`
+  // DD/MM/YYYY or DD-MM-YYYY (day first)
+  const dmy = s.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})/)
+  if (dmy) {
+    let [, d, m, y] = dmy
+    if (y.length === 2) y = `20${y}`
+    const dd = String(d).padStart(2, '0')
+    const mm = String(m).padStart(2, '0')
+    return `${y}-${mm}-${dd}`
+  }
+  return s.slice(0, 10)
+}
+
+/** Normalize a status label; treat "Posted" as "Published". */
+export function normalizeStatus(value) {
+  const s = String(value ?? '').trim()
+  if (!s) return 'Published'
+  const low = s.toLowerCase()
+  if (low === 'posted' || low === 'published' || low === 'live') return 'Published'
+  if (low === 'scheduled' || low === 'schedule') return 'Scheduled'
+  if (low === 'draft' || low === 'drafting') return 'Draft'
+  // Preserve unknown statuses as title-cased.
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
 /** Coerce and normalize a raw record into the canonical post shape. */
 export function normalizePost(raw, index = 0) {
   const num = (v) => {
-    const n = Number(String(v ?? '').replace(/[, ]/g, ''))
+    const t = String(v ?? '').replace(/[, ]/g, '').trim()
+    if (t === '') return 0
+    const n = Number(t)
     return Number.isFinite(n) ? n : 0
   }
   const post = {
     id: raw.id != null && raw.id !== '' ? String(raw.id) : `row-${index}`,
-    date: String(raw.date ?? '').slice(0, 10),
-    pillar: String(raw.pillar ?? 'Uncategorized').trim(),
-    contentType: String(raw.contentType ?? raw.type ?? 'Text').trim(),
+    date: parseDate(raw.date),
+    pillar: String(raw.pillar ?? 'Uncategorized').trim() || 'Uncategorized',
+    contentType: String(raw.contentType ?? raw.type ?? 'Text').trim() || 'Text',
     content: String(raw.content ?? '').trim(),
-    status: String(raw.status ?? 'Published').trim(),
+    status: normalizeStatus(raw.status),
     link: String(raw.link ?? '').trim(),
   }
   for (const f of NUMERIC_FIELDS) post[f] = num(raw[f])
@@ -81,12 +121,44 @@ export async function loadPosts() {
   // return { meta: { platform: 'Threads', source: 'api' }, posts: posts.map(normalizePost) }
 }
 
+// Map a raw header cell to a canonical field key.
+const HEADER_ALIASES = {
+  type: 'contentType',
+  'content type': 'contentType',
+  contenttype: 'contentType',
+  url: 'link',
+  links: 'link',
+  view: 'views',
+  like: 'likes',
+  comment: 'comments',
+  repost: 'reposts',
+  share: 'shares',
+}
+function headerKey(h) {
+  const k = h.trim().toLowerCase()
+  return HEADER_ALIASES[k] || k
+}
+
+const CANONICAL = new Set([
+  'date',
+  'pillar',
+  'content',
+  'status',
+  'link',
+  'contentType',
+  'views',
+  'likes',
+  'comments',
+  'reposts',
+  'shares',
+])
+
 /**
- * Minimal CSV parser (handles quoted fields and commas within quotes).
- * Header names are matched case-insensitively to the canonical fields.
- * Provided so a spreadsheet export can be wired up with no extra deps.
+ * Tokenize delimited text into rows of cells. Handles quoted fields
+ * (with embedded delimiters, newlines, and doubled quotes). The delimiter
+ * is auto-detected per call (tab if present, else comma).
  */
-export function parseCsv(text) {
+function tokenize(text, delimiter) {
   const rows = []
   let row = []
   let field = ''
@@ -101,7 +173,7 @@ export function parseCsv(text) {
         } else inQuotes = false
       } else field += c
     } else if (c === '"') inQuotes = true
-    else if (c === ',') {
+    else if (c === delimiter) {
       row.push(field)
       field = ''
     } else if (c === '\n' || c === '\r') {
@@ -116,23 +188,50 @@ export function parseCsv(text) {
     row.push(field)
     rows.push(row)
   }
-  const nonEmpty = rows.filter((r) => r.some((v) => v.trim() !== ''))
-  if (!nonEmpty.length) return []
-  const header = nonEmpty[0].map((h) => h.trim().toLowerCase())
-  const keyFor = (h) => {
-    const map = {
-      type: 'contentType',
-      'content type': 'contentType',
-      contenttype: 'contentType',
-      url: 'link',
+  return rows
+}
+
+/**
+ * Robust CSV/TSV parser tuned for spreadsheet exports and pastes.
+ * - Auto-detects tab vs comma delimiter.
+ * - Skips any leading title/blank rows before the real header.
+ * - Locates the header row by looking for the canonical column names.
+ * - Ignores extra columns like a leading blank column or a "No" index column.
+ * Returns an array of raw record objects (pass each through normalizePost).
+ */
+export function parseCsv(text) {
+  if (!text || !text.trim()) return []
+  const delimiter = text.includes('\t') ? '\t' : ','
+  const rows = tokenize(text, delimiter).filter((r) => r.some((v) => String(v).trim() !== ''))
+  if (!rows.length) return []
+
+  // Find the header row: the first row that contains at least 3 canonical fields.
+  let headerIdx = -1
+  for (let i = 0; i < rows.length; i++) {
+    const keys = rows[i].map(headerKey)
+    const hits = keys.filter((k) => CANONICAL.has(k)).length
+    if (hits >= 3) {
+      headerIdx = i
+      break
     }
-    return map[h] || h
   }
-  return nonEmpty.slice(1).map((cells) => {
+  if (headerIdx === -1) return []
+
+  const header = rows[headerIdx].map(headerKey)
+  return rows.slice(headerIdx + 1).map((cells) => {
     const obj = {}
-    header.forEach((h, idx) => {
-      obj[keyFor(h)] = cells[idx]
+    header.forEach((key, idx) => {
+      if (CANONICAL.has(key)) obj[key] = cells[idx]
     })
     return obj
   })
+  // Note: unrecognized columns (leading blank, "no") are dropped because they
+  // are not in CANONICAL, so the index column is safely ignored.
+}
+
+/** Convenience: parse text and return normalized posts ready for the store. */
+export function parsePostsText(text) {
+  return parseCsv(text)
+    .map((r, i) => normalizePost(r, i))
+    .filter((p) => p.content || p.link) // drop empty rows
 }

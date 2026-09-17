@@ -1,7 +1,7 @@
 import { useMemo, useState, useSyncExternalStore } from 'react'
 import './styles/app.css'
 import Sidebar from './components/Sidebar'
-import { IconMenu, IconDownload, IconExternal, IconPlus, IconTable } from './components/Icons'
+import { IconMenu, IconDownload, IconExternal, IconPlus, IconTable, IconUpload } from './components/Icons'
 import Overview from './views/Overview'
 import Analytics from './views/Analytics'
 import ContentPerformance from './views/ContentPerformance'
@@ -9,6 +9,7 @@ import Weekly from './views/Weekly'
 import Monthly from './views/Monthly'
 import AiRecommendations from './views/AiRecommendations'
 import LogPostModal from './components/LogPostModal'
+import ImportModal from './components/ImportModal'
 import {
   subscribe,
   getSnapshot,
@@ -16,6 +17,8 @@ import {
   addPost,
   updatePost,
   deletePost,
+  addMany,
+  replaceAll,
 } from './lib/postsStore'
 import {
   DATE_PRESETS,
@@ -25,6 +28,8 @@ import {
 } from './lib/filters'
 import { PILLARS, STATUSES } from './lib/constants'
 import { computeKpis } from './lib/analytics'
+import { parsePostsText } from './data/dataSource'
+import { WEEK1_SEP_CSV } from './data/week1Sep'
 import { exportSummaryCsv, exportPostsCsv } from './lib/export'
 import { formatDateLong } from './lib/format'
 
@@ -49,6 +54,8 @@ export default function App() {
   // Log Post modal state
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
+  // Import modal state
+  const [importOpen, setImportOpen] = useState(false)
 
   // Global filters
   const [preset, setPreset] = useState('all')
@@ -98,6 +105,15 @@ export default function App() {
   function handleDelete(post) {
     if (window.confirm(`Delete this post?\n\n“${post.content.slice(0, 80)}”`)) deletePost(post.id)
   }
+  function handleImport(posts, mode) {
+    if (mode === 'replace') replaceAll(posts)
+    else addMany(posts)
+    setImportOpen(false)
+  }
+  function loadWeek1Sample() {
+    const posts = parsePostsText(WEEK1_SEP_CSV)
+    replaceAll(posts)
+  }
 
   function navigate(id) {
     setView(id)
@@ -127,6 +143,9 @@ export default function App() {
               {periodLabel}
             </span>
           )}
+          <button className="btn" onClick={() => setImportOpen(true)}>
+            <IconUpload /> Import
+          </button>
           <button className="btn btn--primary" onClick={openCreate}>
             <IconPlus /> Log post
           </button>
@@ -200,11 +219,31 @@ export default function App() {
               </span>
               <h2>No posts logged yet</h2>
               <p>
-                Start building your dashboard by logging your Threads posts. Add the date, pillar, content, status,
-                link, and metrics — your KPIs, charts, insights, and AI recommendations will update automatically.
+                Start building your dashboard by logging your Threads posts one by one, or bulk-import a whole week by
+                pasting from your spreadsheet. Your KPIs, charts, insights, and AI recommendations update automatically.
               </p>
-              <button className="btn btn--primary" onClick={openCreate}>
-                <IconPlus /> Log your first post
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+                <button className="btn btn--primary" onClick={openCreate}>
+                  <IconPlus /> Log a post
+                </button>
+                <button className="btn" onClick={() => setImportOpen(true)}>
+                  <IconUpload /> Import from spreadsheet
+                </button>
+              </div>
+              <button
+                className="muted"
+                onClick={loadWeek1Sample}
+                style={{
+                  marginTop: 4,
+                  fontSize: 12.5,
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--brand-500)',
+                  fontWeight: 600,
+                }}
+              >
+                or load the Week 1 September sample (156 posts) →
               </button>
             </div>
           ) : filtered.length === 0 ? (
@@ -289,6 +328,13 @@ export default function App() {
           setModalOpen(false)
           setEditing(null)
         }}
+      />
+
+      <ImportModal
+        open={importOpen}
+        hasExisting={hasPosts}
+        onImport={handleImport}
+        onClose={() => setImportOpen(false)}
       />
     </div>
   )

@@ -1215,10 +1215,28 @@ table.data tbody tr:hover {
   line-height: 1.5;
 }
 
+/* Sticky actions column so Edit/Delete stay visible even when the wide
+   content table scrolls horizontally. */
+table.data th.col-actions,
+table.data td.col-actions {
+  position: sticky;
+  right: 0;
+  background: var(--surface);
+  box-shadow: -8px 0 8px -6px rgba(14, 21, 18, 0.08);
+  z-index: 2;
+}
+table.data th.col-actions {
+  font-size: 11px;
+}
+table.data tbody tr:hover td.col-actions {
+  background: var(--brand-tint);
+}
+
 /* Row action buttons in the content table */
 .row-actions {
   display: inline-flex;
   gap: 6px;
+  justify-content: flex-end;
 }
 .row-btn {
   width: 28px;

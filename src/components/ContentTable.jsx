@@ -76,7 +76,7 @@ export default function ContentTable({ posts, initialSort = 'views', pageSize = 
                   )}
                 </th>
               ))}
-              {showActions && <th className="num" aria-label="Actions" />}
+              {showActions && <th className="num col-actions" aria-label="Actions">Edit</th>}
             </tr>
           </thead>
           <tbody>
@@ -132,7 +132,7 @@ export default function ContentTable({ posts, initialSort = 'views', pageSize = 
                     ) : null}
                   </td>
                   {showActions && (
-                    <td className="num">
+                    <td className="num col-actions">
                       <div className="row-actions">
                         {onEdit && (
                           <button className="row-btn" title="Edit post" aria-label="Edit post" onClick={() => onEdit(p)}>

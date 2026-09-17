@@ -586,22 +586,38 @@ table.data tbody tr:hover {
   gap: 9px;
   min-width: 260px;
 }
-/* Pillar badge + post text stacked in one column. */
+/* Pillar badge + post text side by side in one cell. */
 .cell-post {
   display: flex;
-  flex-direction: column;
-  gap: 5px;
-  min-width: 240px;
-  max-width: 420px;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-width: 300px;
+  max-width: 460px;
+}
+.cell-post .badge {
+  flex: none;
 }
 .cell-post__text {
   font-size: 12.5px;
   color: var(--ink-700);
-  line-height: 1.45;
+  line-height: 1.4;
+  white-space: nowrap;
   overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
+}
+
+/* Colored pillar badge (per-pillar hue + dot). */
+.badge--pillar-colored {
+  border: 1px solid transparent;
+  font-weight: 600;
+}
+.badge--pillar-colored .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  flex: none;
 }
 .cell-title .txt {
   color: var(--ink-900);

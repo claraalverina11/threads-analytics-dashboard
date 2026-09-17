@@ -4,7 +4,7 @@ import { BarBreakdownChart, AreaTimeChart, Legend } from '../components/charts'
 import { IconTrend, IconTrophy, IconLayers, IconGauge, IconArrowRight } from '../components/Icons'
 import { buildPeriodInsights } from '../lib/insights'
 import { bucketedSeries } from '../lib/analytics'
-import { CATEGORICAL, METRIC_COLORS, BRAND } from '../lib/theme'
+import { METRIC_COLORS, BRAND, pillarColor } from '../lib/theme'
 import { formatCompact, formatPercent, formatNumber, formatDateLong, truncate } from '../lib/format'
 
 const HEADLINE_ICONS = [IconTrend, IconGauge, IconLayers, IconArrowRight]
@@ -88,7 +88,10 @@ export default function PeriodInsights({ posts, granularity }) {
                   .map((p) => ({ name: p.pillar, engagements: p.engagements }))}
                 xKey="name"
                 bar={{ key: 'engagements', label: 'Engagements', color: BRAND, format: 'compact' }}
-                colors={CATEGORICAL}
+                colors={pillarMoves
+                  .slice()
+                  .sort((a, b) => b.engagements - a.engagements)
+                  .map((p) => pillarColor(p.pillar).color)}
                 height={Math.max(pillarMoves.length * 44 + 20, 160)}
               />
             </div>

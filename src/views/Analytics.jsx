@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { Card, CardHead, Section } from '../components/ui'
 import { AreaTimeChart, LineTimeChart, BarBreakdownChart, Legend } from '../components/charts'
 import { bucketedSeries, groupBy } from '../lib/analytics'
-import { CATEGORICAL, METRIC_COLORS, BRAND, BRAND_400 } from '../lib/theme'
+import { METRIC_COLORS, BRAND, BRAND_400, pillarColor } from '../lib/theme'
 import { formatCompact, formatPercent, formatNumber } from '../lib/format'
 
 export default function Analytics({ posts, granularity }) {
@@ -81,7 +81,7 @@ export default function Analytics({ posts, granularity }) {
                 data={pillars.map((p) => ({ name: p.key, engagements: p.engagements }))}
                 xKey="name"
                 bar={{ key: 'engagements', label: 'Engagements', color: BRAND, format: 'compact' }}
-                colors={CATEGORICAL}
+                colors={pillars.map((p) => pillarColor(p.key).color)}
                 height={pillars.length * 46 + 20}
               />
             </div>
@@ -100,7 +100,7 @@ export default function Analytics({ posts, granularity }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {pillars.map((p, i) => (
+                    {pillars.map((p) => (
                       <tr key={p.key}>
                         <td>
                           <span
@@ -109,7 +109,7 @@ export default function Analytics({ posts, granularity }) {
                               width: 9,
                               height: 9,
                               borderRadius: 3,
-                              background: CATEGORICAL[i % CATEGORICAL.length],
+                              background: pillarColor(p.key).color,
                               marginRight: 8,
                             }}
                           />

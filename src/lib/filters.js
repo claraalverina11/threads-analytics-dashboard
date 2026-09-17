@@ -1,16 +1,65 @@
 // Global filtering: date range presets, pillar/status filters, and the
 // derivation of the "previous period" comparison window.
-import { toDate, isoDaysAgo } from './dates'
+import { toDate } from './dates'
 import { differenceInCalendarDays, addDays, format } from 'date-fns'
 
-export const DATE_PRESETS = [
-  { id: '7d', label: 'Last 7 days', days: 7 },
-  { id: '28d', label: 'Last 28 days', days: 28 },
-  { id: '90d', label: 'Last 90 days', days: 90 },
-  { id: 'all', label: 'All time', days: null },
+// Date-filter modes. All windows are derived from the DATA, never from the
+// current time.
+export const DATE_MODES = [
+  { id: 'all', label: 'All time' },
+  { id: 'month', label: 'By month' },
+  { id: 'week', label: 'By week' },
+  { id: 'custom', label: 'Custom range' },
+]
+
+// Weeks within a month are fixed calendar blocks so "Week 1–4" is predictable.
+export const WEEK_OPTIONS = [
+  { id: 1, label: 'Week 1', from: 1, to: 7 },
+  { id: 2, label: 'Week 2', from: 8, to: 14 },
+  { id: 3, label: 'Week 3', from: 15, to: 21 },
+  { id: 4, label: 'Week 4', from: 22, to: 31 }, // clamped to month end
 ]
 
 const ISO_RE = /^\d{4}-\d{2}-\d{2}$/
+
+/** Days in a given month (1-based month). */
+function daysInMonth(year, month) {
+  return new Date(year, month, 0).getDate()
+}
+
+/** Distinct 'YYYY-MM' months present in the data, sorted ascending. */
+export function monthsInData(posts) {
+  const set = new Set()
+  for (const p of posts) {
+    if (ISO_RE.test(p.date)) set.add(p.date.slice(0, 7))
+  }
+  return [...set].sort()
+}
+
+/** Human label for a 'YYYY-MM' key, e.g. 'September 2026'. */
+export function monthKeyLabel(ym) {
+  const [y, m] = ym.split('-').map(Number)
+  const d = new Date(y, m - 1, 1)
+  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+}
+
+/** ISO range covering an entire 'YYYY-MM' month. */
+export function monthRangeOf(ym) {
+  const [y, m] = ym.split('-').map(Number)
+  const last = daysInMonth(y, m)
+  return { start: `${ym}-01`, end: `${ym}-${String(last).padStart(2, '0')}` }
+}
+
+/** ISO range for week 1-4 within a 'YYYY-MM' month (last week clamped). */
+export function weekRangeOf(ym, weekId) {
+  const [y, m] = ym.split('-').map(Number)
+  const wk = WEEK_OPTIONS.find((w) => w.id === weekId) || WEEK_OPTIONS[0]
+  const last = daysInMonth(y, m)
+  const from = Math.min(wk.from, last)
+  const to = Math.min(wk.to, last)
+  const pad = (n) => String(n).padStart(2, '0')
+  return { start: `${ym}-${pad(from)}`, end: `${ym}-${pad(to)}` }
+}
 
 /** Determine the dataset's max date (anchor for presets). Ignores invalid dates. */
 export function datasetMaxDate(posts) {
@@ -32,33 +81,32 @@ export function datasetMinDate(posts) {
 }
 
 /**
- * Compute [start,end] ISO strings for a preset.
- * The window is always anchored to the dataset itself (the latest post),
- * not to "today", so imported data from any month displays correctly.
- * The result is clamped to the dataset's actual min/max and guaranteed to
- * have start <= end.
+ * Resolve the active date window from a data-based filter selection.
+ * `filter` = { mode: 'all'|'month'|'week'|'custom', month: 'YYYY-MM',
+ *              week: 1..4, custom: { start, end } }.
+ * Nothing here uses the current time — every window comes from the data
+ * or the user's explicit choice. Falls back to the full data span.
  */
-export function resolveRange(presetId, posts, custom) {
-  if (presetId === 'custom' && custom?.start && custom?.end) {
-    const start = custom.start <= custom.end ? custom.start : custom.end
-    const end = custom.start <= custom.end ? custom.end : custom.start
-    return { start, end }
-  }
+export function resolveRange(filter, posts) {
   const min = datasetMinDate(posts)
-  const max = datasetMaxDate(posts) // anchor = latest post date
-  const preset = DATE_PRESETS.find((p) => p.id === presetId) || DATE_PRESETS.find((p) => p.id === 'all')
+  const max = datasetMaxDate(posts)
+  const full = { start: min, end: max }
+  if (!filter || !filter.mode || filter.mode === 'all') return full
 
-  // "All time" (days == null): full span of the data.
-  if (!preset || preset.days == null) {
-    return { start: min, end: max }
+  if (filter.mode === 'custom') {
+    const c = filter.custom
+    if (!c?.start || !c?.end) return full
+    return c.start <= c.end ? { start: c.start, end: c.end } : { start: c.end, end: c.start }
   }
 
-  // Rolling window ending at the latest post; never start before the data
-  // begins, and never invert the range.
-  let start = isoDaysAgo(max, preset.days - 1)
-  if (start < min) start = min
-  if (start > max) start = min // safety: never invert
-  return { start, end: max }
+  // Month / Week both need a month key; default to the latest month in data.
+  const months = monthsInData(posts)
+  const month = filter.month && months.includes(filter.month) ? filter.month : months[months.length - 1]
+  if (!month) return full
+
+  if (filter.mode === 'month') return monthRangeOf(month)
+  if (filter.mode === 'week') return weekRangeOf(month, filter.week || 1)
+  return full
 }
 
 /** The immediately-preceding window of equal length, for period comparison. */

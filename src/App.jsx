@@ -5,8 +5,7 @@ import { IconMenu, IconDownload, IconExternal, IconPlus, IconTable, IconUpload, 
 import Overview from './views/Overview'
 import Analytics from './views/Analytics'
 import ContentPerformance from './views/ContentPerformance'
-import Weekly from './views/Weekly'
-import Monthly from './views/Monthly'
+import PeriodInsights from './views/PeriodInsights'
 import AiRecommendations from './views/AiRecommendations'
 import LogPostModal from './components/LogPostModal'
 import ImportModal from './components/ImportModal'
@@ -22,10 +21,13 @@ import {
   clearAll,
 } from './lib/postsStore'
 import {
-  DATE_PRESETS,
+  DATE_MODES,
+  WEEK_OPTIONS,
   resolveRange,
   previousRange,
   applyFilters,
+  monthsInData,
+  monthKeyLabel,
 } from './lib/filters'
 import { PILLARS, STATUSES } from './lib/constants'
 import { computeKpis } from './lib/analytics'
@@ -36,10 +38,12 @@ const VIEW_META = {
   overview: { title: 'Overview', sub: 'Account-wide performance at a glance' },
   analytics: { title: 'Analytics', sub: 'Trends, pillars, and content-type deep dive' },
   content: { title: 'Content Performance', sub: 'Every post, sortable and searchable' },
-  weekly: { title: 'Weekly Insights', sub: 'Auto-summarized week-over-week changes' },
-  monthly: { title: 'Monthly Insights', sub: 'Auto-summarized month-over-month changes' },
+  insights: { title: 'Insights', sub: 'Auto-summarized period-over-period changes' },
   ai: { title: 'AI Recommendations', sub: 'Actionable guidance from your data' },
 }
+
+// Views that support the weekly/monthly Group by toggle.
+const GROUPED_VIEWS = new Set(['overview', 'analytics', 'insights'])
 
 export default function App() {
   // The posts store is the source of truth (localStorage-backed).
@@ -56,17 +60,29 @@ export default function App() {
   // Import modal state
   const [importOpen, setImportOpen] = useState(false)
 
-  // Global filters
-  const [preset, setPreset] = useState('all')
+  // Global filters. The date filter is data-based (never anchored to today):
+  //   mode: all | month | week | custom
+  const [dateMode, setDateMode] = useState('all')
+  const [monthSel, setMonthSel] = useState('') // 'YYYY-MM'
+  const [weekSel, setWeekSel] = useState(1) // 1..4
+  const [custom, setCustom] = useState({ start: '', end: '' })
   const [pillar, setPillar] = useState('All')
   const [status, setStatus] = useState('All')
   const [granularity, setGranularity] = useState('week')
 
-  const range = useMemo(() => resolveRange(preset, allPosts), [preset, allPosts])
+  // Months available in the data; default the month selector to the latest.
+  const months = useMemo(() => monthsInData(allPosts), [allPosts])
+  const activeMonth = monthSel && months.includes(monthSel) ? monthSel : months[months.length - 1] || ''
+
+  const dateFilter = useMemo(
+    () => ({ mode: dateMode, month: activeMonth, week: weekSel, custom }),
+    [dateMode, activeMonth, weekSel, custom],
+  )
+  const range = useMemo(() => resolveRange(dateFilter, allPosts), [dateFilter, allPosts])
   const prevRange = useMemo(() => previousRange(range), [range])
 
   // Under "All time" we keep undated posts visible; a specific window filters them.
-  const dateFilterActive = preset !== 'all'
+  const dateFilterActive = dateMode !== 'all'
   const filtered = useMemo(
     () => applyFilters(allPosts, { range, pillar, status, dateFilterActive }),
     [allPosts, range, pillar, status, dateFilterActive],
@@ -160,15 +176,87 @@ export default function App() {
         {hasPosts && (
           <div className="filterbar">
             <div className="filter">
-              <span className="filter__label">Date range</span>
-              <select className="select" value={preset} onChange={(e) => setPreset(e.target.value)} aria-label="Date range">
-                {DATE_PRESETS.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.label}
+              <span className="filter__label">Date filter</span>
+              <select
+                className="select"
+                value={dateMode}
+                onChange={(e) => setDateMode(e.target.value)}
+                aria-label="Date filter mode"
+              >
+                {DATE_MODES.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.label}
                   </option>
                 ))}
               </select>
             </div>
+
+            {(dateMode === 'month' || dateMode === 'week') && (
+              <div className="filter">
+                <span className="filter__label">Month</span>
+                <select
+                  className="select"
+                  value={activeMonth}
+                  onChange={(e) => setMonthSel(e.target.value)}
+                  aria-label="Month"
+                  disabled={months.length === 0}
+                >
+                  {months.length === 0 ? (
+                    <option>No data</option>
+                  ) : (
+                    months.map((ym) => (
+                      <option key={ym} value={ym}>
+                        {monthKeyLabel(ym)}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+            )}
+
+            {dateMode === 'week' && (
+              <div className="filter">
+                <span className="filter__label">Week</span>
+                <select
+                  className="select"
+                  value={weekSel}
+                  onChange={(e) => setWeekSel(Number(e.target.value))}
+                  aria-label="Week of month"
+                >
+                  {WEEK_OPTIONS.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.label} ({w.from}–{w.to === 31 ? 'end' : w.to})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {dateMode === 'custom' && (
+              <>
+                <div className="filter">
+                  <span className="filter__label">From</span>
+                  <input
+                    type="date"
+                    className="field"
+                    value={custom.start}
+                    onChange={(e) => setCustom((c) => ({ ...c, start: e.target.value }))}
+                    aria-label="Custom start date"
+                  />
+                </div>
+                <div className="filter">
+                  <span className="filter__label">To</span>
+                  <input
+                    type="date"
+                    className="field"
+                    value={custom.end}
+                    onChange={(e) => setCustom((c) => ({ ...c, end: e.target.value }))}
+                    aria-label="Custom end date"
+                  />
+                </div>
+              </>
+            )}
+
             <div className="filter">
               <span className="filter__label">Pillar</span>
               <select className="select" value={pillar} onChange={(e) => setPillar(e.target.value)} aria-label="Content pillar">
@@ -192,7 +280,7 @@ export default function App() {
 
             <div className="filterbar__spacer" />
 
-            {(view === 'overview' || view === 'analytics' || view === 'weekly' || view === 'monthly') && (
+            {GROUPED_VIEWS.has(view) && (
               <div className="filter">
                 <span className="filter__label">Group by</span>
                 <div className="segmented" role="group" aria-label="Group by period">
@@ -243,7 +331,7 @@ export default function App() {
               <button
                 className="btn"
                 onClick={() => {
-                  setPreset('all')
+                  setDateMode('all')
                   setPillar('All')
                   setStatus('All')
                 }}
@@ -258,8 +346,7 @@ export default function App() {
               {view === 'content' && (
                 <ContentPerformance posts={filtered} periodLabel={periodLabel} onEdit={openEdit} onDelete={handleDelete} />
               )}
-              {view === 'weekly' && <Weekly posts={filtered} />}
-              {view === 'monthly' && <Monthly posts={filtered} />}
+              {view === 'insights' && <PeriodInsights posts={filtered} granularity={granularity} />}
               {view === 'ai' && <AiRecommendations posts={filtered} periodLabel={periodLabel} />}
             </>
           )}

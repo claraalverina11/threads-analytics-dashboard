@@ -22,8 +22,11 @@ function load() {
     if (!raw) return []
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    return parsed.map((p, i) => normalizePost(p, i))
+    return parsed
+      .filter((p) => p && typeof p === 'object')
+      .map((p, i) => normalizePost(p, i))
   } catch {
+    // Corrupt/incompatible data must never blank the app — start clean.
     return []
   }
 }

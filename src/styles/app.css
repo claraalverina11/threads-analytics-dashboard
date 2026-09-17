@@ -586,6 +586,23 @@ table.data tbody tr:hover {
   gap: 9px;
   min-width: 260px;
 }
+/* Pillar badge + post text stacked in one column. */
+.cell-post {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 240px;
+  max-width: 420px;
+}
+.cell-post__text {
+  font-size: 12.5px;
+  color: var(--ink-700);
+  line-height: 1.45;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
 .cell-title .txt {
   color: var(--ink-900);
   font-weight: 550;

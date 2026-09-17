@@ -2,7 +2,12 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
+// `base` controls the public path assets are served from. For GitHub Pages
+// project sites the app lives under /<repo>/, so the deploy workflow sets
+// VITE_BASE=/threads-analytics-dashboard/. Local dev and other hosts default
+// to '/'.
 export default defineConfig({
+  base: process.env.VITE_BASE || '/',
   plugins: [react()],
   build: {
     rollupOptions: {

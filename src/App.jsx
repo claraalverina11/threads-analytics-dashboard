@@ -65,13 +65,15 @@ export default function App() {
   const range = useMemo(() => resolveRange(preset, allPosts), [preset, allPosts])
   const prevRange = useMemo(() => previousRange(range), [range])
 
+  // Under "All time" we keep undated posts visible; a specific window filters them.
+  const dateFilterActive = preset !== 'all'
   const filtered = useMemo(
-    () => applyFilters(allPosts, { range, pillar, status }),
-    [allPosts, range, pillar, status],
+    () => applyFilters(allPosts, { range, pillar, status, dateFilterActive }),
+    [allPosts, range, pillar, status, dateFilterActive],
   )
   const prevFiltered = useMemo(
-    () => applyFilters(allPosts, { range: prevRange, pillar, status }),
-    [allPosts, prevRange, pillar, status],
+    () => applyFilters(allPosts, { range: prevRange, pillar, status, dateFilterActive }),
+    [allPosts, prevRange, pillar, status, dateFilterActive],
   )
 
   // Filter option lists — always show the canonical pillars/statuses so the

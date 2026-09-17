@@ -10,10 +10,13 @@ export const DATE_PRESETS = [
   { id: 'all', label: 'All time', days: null },
 ]
 
-/** Determine the dataset's max date (used as the anchor for presets). */
+const ISO_RE = /^\d{4}-\d{2}-\d{2}$/
+
+/** Determine the dataset's max date (anchor for presets). Ignores invalid dates. */
 export function datasetMaxDate(posts) {
   let max = null
   for (const p of posts) {
+    if (!ISO_RE.test(p.date)) continue
     if (!max || p.date > max) max = p.date
   }
   return max || format(new Date(), 'yyyy-MM-dd')
@@ -22,6 +25,7 @@ export function datasetMaxDate(posts) {
 export function datasetMinDate(posts) {
   let min = null
   for (const p of posts) {
+    if (!ISO_RE.test(p.date)) continue
     if (!min || p.date < min) min = p.date
   }
   return min || format(new Date(), 'yyyy-MM-dd')
@@ -67,10 +71,17 @@ export function previousRange(range) {
   return { start: format(prevStart, 'yyyy-MM-dd'), end: format(prevEnd, 'yyyy-MM-dd') }
 }
 
-/** Apply date range + pillar + status filters. */
-export function applyFilters(posts, { range, pillar, status }) {
+/**
+ * Apply date range + pillar + status filters.
+ * A post with an invalid/empty date is only range-filtered when a specific
+ * (non "all") preset is active; under the default full-span view it is always
+ * kept, so imported rows never silently vanish because of a date quirk.
+ */
+export function applyFilters(posts, { range, pillar, status, dateFilterActive = true }) {
   return posts.filter((p) => {
-    if (range && (p.date < range.start || p.date > range.end)) return false
+    const validDate = ISO_RE.test(p.date)
+    if (range && validDate && (p.date < range.start || p.date > range.end)) return false
+    if (range && !validDate && dateFilterActive) return false
     if (pillar && pillar !== 'All' && p.pillar !== pillar) return false
     if (status && status !== 'All' && p.status !== status) return false
     return true

@@ -49,22 +49,74 @@ const NUMERIC_FIELDS = ['views', 'likes', 'comments', 'reposts', 'shares']
  * Ambiguous DD/MM vs MM/DD is resolved as DAY-FIRST, since the source
  * spreadsheet uses DD/MM/YYYY. Falls back to the raw string if unrecognized.
  */
+const MONTHS = {
+  jan: '01', january: '01', feb: '02', february: '02', mar: '03', march: '03',
+  apr: '04', april: '04', may: '05', jun: '06', june: '06', jul: '07', july: '07',
+  aug: '08', august: '08', sep: '09', sept: '09', september: '09', oct: '10', october: '10',
+  nov: '11', november: '11', dec: '12', december: '12',
+}
+
+function isValidIso(s) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false
+  const [y, m, d] = s.split('-').map(Number)
+  return m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 1970 && y <= 2999
+}
+
+/**
+ * Parse a date from many common formats into ISO 'YYYY-MM-DD':
+ *   - 2026-09-01 / 2026/09/01        (ISO, year first)
+ *   - 01/09/2026, 1/9/2026           (DD/MM/YYYY — day first, matches the sheet)
+ *   - 01-09-2026, 01.09.2026         (DD-MM-YYYY)
+ *   - "August 1, 2026", "1 Aug 2026", "Aug 1 2026"  (month names)
+ * Day-first is assumed for all-numeric slash/dash dates (the source sheet
+ * uses DD/MM/YYYY). Returns '' when nothing valid can be extracted, so
+ * callers/filters can treat it as "undated" rather than corrupting ranges.
+ */
 export function parseDate(value) {
   const s = String(value ?? '').trim()
   if (!s) return ''
-  // Already ISO (YYYY-MM-DD…)
-  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/)
-  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`
-  // DD/MM/YYYY or DD-MM-YYYY (day first)
-  const dmy = s.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})/)
+
+  // ISO / year-first: 2026-09-01 or 2026/09/01
+  const isoM = s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/)
+  if (isoM) {
+    const out = `${isoM[1]}-${isoM[2].padStart(2, '0')}-${isoM[3].padStart(2, '0')}`
+    return isValidIso(out) ? out : ''
+  }
+
+  // All-numeric day-first: DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY (2- or 4-digit year)
+  const dmy = s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/)
   if (dmy) {
     let [, d, m, y] = dmy
     if (y.length === 2) y = `20${y}`
-    const dd = String(d).padStart(2, '0')
-    const mm = String(m).padStart(2, '0')
-    return `${y}-${mm}-${dd}`
+    const out = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+    return isValidIso(out) ? out : ''
   }
-  return s.slice(0, 10)
+
+  // Month-name formats: "August 1, 2026", "1 August 2026", "Aug 1 2026"
+  const lower = s.toLowerCase()
+  // day + month + year   (1 Aug 2026)
+  let mn = lower.match(/^(\d{1,2})\s+([a-z]+)\.?\s+(\d{4})/)
+  if (mn && MONTHS[mn[2]]) {
+    const out = `${mn[3]}-${MONTHS[mn[2]]}-${mn[1].padStart(2, '0')}`
+    return isValidIso(out) ? out : ''
+  }
+  // month + day + year   (August 1, 2026  /  Aug 1 2026)
+  mn = lower.match(/^([a-z]+)\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})/)
+  if (mn && MONTHS[mn[1]]) {
+    const out = `${mn[3]}-${MONTHS[mn[1]]}-${mn[2].padStart(2, '0')}`
+    return isValidIso(out) ? out : ''
+  }
+
+  // Last resort: let the JS engine try, else give up (empty = undated).
+  const parsed = new Date(s)
+  if (!Number.isNaN(parsed.getTime())) {
+    const y = parsed.getFullYear()
+    const m = String(parsed.getMonth() + 1).padStart(2, '0')
+    const d = String(parsed.getDate()).padStart(2, '0')
+    const out = `${y}-${m}-${d}`
+    return isValidIso(out) ? out : ''
+  }
+  return ''
 }
 
 /** Normalize a status label; treat "Posted" as "Published". */
@@ -72,9 +124,10 @@ export function normalizeStatus(value) {
   const s = String(value ?? '').trim()
   if (!s) return 'Published'
   const low = s.toLowerCase()
-  if (low === 'posted' || low === 'published' || low === 'live') return 'Published'
-  if (low === 'scheduled' || low === 'schedule') return 'Scheduled'
-  if (low === 'draft' || low === 'drafting') return 'Draft'
+  if (low.startsWith('post') || low.startsWith('publish') || low === 'live' || low === 'done')
+    return 'Published'
+  if (low.startsWith('schedul') || low.startsWith('plan') || low === 'upcoming') return 'Scheduled'
+  if (low.startsWith('draft') || low === 'wip' || low === 'idea') return 'Draft'
   // Preserve unknown statuses as title-cased.
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
